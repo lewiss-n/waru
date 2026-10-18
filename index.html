@@ -178,7 +178,8 @@ section{position:relative}
 .play:hover .disc{transform:scale(1.08) rotate(-6deg)}
 .play .disc svg{width:38px;height:38px;margin-left:6px}
 .play .cta{position:absolute;bottom:56px;left:0;right:0;text-align:center;color:#fff;font-family:var(--f-display);font-size:1.5rem;text-shadow:0 2px 6px #000a}
-.vctrl{position:absolute;bottom:16px;left:14px;right:14px;z-index:2;display:flex;justify-content:space-between;gap:8px}
+.play[hidden]{display:none}
+.vctrl{position:absolute;bottom:16px;left:14px;right:14px;z-index:4;display:flex;justify-content:space-between;gap:8px}
 .vctrl button{border:0;background:#000a;color:#fff;border-radius:999px;padding:6px 12px;font-family:var(--f-mono);font-size:.75rem;backdrop-filter:blur(4px)}
 .watch-copy{min-width:0}
 .watch-copy ul{list-style:none;padding:0;margin:22px 0 0;display:grid;gap:10px}
@@ -393,7 +394,7 @@ footer b{color:var(--fry);font-family:var(--f-display);font-weight:400;font-size
             <span class="cta">Press play</span>
           </button>
           <div class="vctrl">
-            <button type="button" id="pauseBtn">Pause</button>
+            <button type="button" id="pauseBtn">Play</button>
             <button type="button" id="muteBtn">Sound on</button>
           </div>
         </div>
@@ -608,13 +609,16 @@ footer b{color:var(--fry);font-family:var(--f-display);font-weight:400;font-size
 
   /* ---------- video ---------- */
   const vid=$('#vid'), playBtn=$('#playBtn'), pauseBtn=$('#pauseBtn'), muteBtn=$('#muteBtn'), prog=$('#storyProg');
-  function playIt(){ vid.muted=false; muteBtn.textContent='Mute'; vid.play().then(()=>{playBtn.hidden=true;}).catch(()=>{ vid.muted=true; muteBtn.textContent='Sound on'; vid.play().then(()=>playBtn.hidden=true).catch(()=>{}); }); }
+  const cta=playBtn.querySelector('.cta');
+  function playIt(){ vid.muted=false; muteBtn.textContent='Mute'; vid.play().catch(()=>{ vid.muted=true; muteBtn.textContent='Sound on'; vid.play().catch(()=>{}); }); }
   playBtn.addEventListener('click',playIt);
   vid.addEventListener('click',()=>{ if(vid.paused) playIt(); else vid.pause(); });
   pauseBtn.addEventListener('click',()=>{ if(vid.paused) playIt(); else vid.pause(); });
-  vid.addEventListener('pause',()=>{ pauseBtn.textContent='Play'; });
-  vid.addEventListener('play',()=>{ pauseBtn.textContent='Pause'; playBtn.hidden=true; });
-  vid.addEventListener('ended',()=>{ playBtn.hidden=false; playBtn.querySelector('.cta').textContent='Watch again'; });
+  // Overlay hides the moment playback starts and returns whenever it stops
+  vid.addEventListener('playing',()=>{ playBtn.hidden=true; pauseBtn.textContent='Pause'; });
+  vid.addEventListener('play',()=>{ playBtn.hidden=true; pauseBtn.textContent='Pause'; });
+  vid.addEventListener('pause',()=>{ pauseBtn.textContent='Play'; if(!vid.ended){ cta.textContent='Resume'; playBtn.hidden=false; } });
+  vid.addEventListener('ended',()=>{ pauseBtn.textContent='Play'; cta.textContent='Watch again'; playBtn.hidden=false; });
   muteBtn.addEventListener('click',()=>{ vid.muted=!vid.muted; muteBtn.textContent=vid.muted?'Sound on':'Mute'; });
   vid.addEventListener('timeupdate',()=>{ if(vid.duration) prog.style.width=(vid.currentTime/vid.duration*100)+'%'; });
   document.querySelectorAll('.chapter').forEach(c=>c.addEventListener('click',()=>{
