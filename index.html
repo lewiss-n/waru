@@ -238,11 +238,31 @@ footer b{color:var(--fry);font-family:var(--f-display);font-weight:400;font-size
 #fryCanvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:70}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));translate:-50% 0;z-index:80;background:var(--wok);color:var(--cream);border:2px solid var(--fry);padding:10px 18px;border-radius:999px;font-weight:600;box-shadow:4px 4px 0 var(--chili);max-width:calc(100% - 32px);text-align:center;transition:opacity .25s,transform .25s;opacity:0;transform:translateY(12px);pointer-events:none}
 .toast.show{opacity:1;transform:none}
+.fries-modal{border:3px solid var(--wok);border-radius:22px;background:var(--cream);color:var(--wok);padding:28px 24px 24px;width:min(440px,calc(100% - 32px));box-shadow:6px 6px 0 var(--chili);text-align:center}
+.fries-modal::backdrop{background:#1D1A17b3}
+.fries-modal[open]{animation:pop-in .3s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pop-in{from{transform:scale(.85);opacity:0}}
+@media (prefers-reduced-motion:reduce){.fries-modal[open]{animation:none}}
+.fries-modal h3{font-size:clamp(1.8rem,6vw,2.4rem);line-height:1;margin:6px 0 10px}
+.fries-modal p{margin:0 0 20px;color:var(--ink-soft)}
+.fries-modal .opts{display:grid;gap:10px}
+.fries-modal .opts .btn{justify-content:center}
+.fries-modal .later{margin-top:14px;background:none;border:0;font-family:var(--f-mono);font-size:.8rem;text-decoration:underline;color:var(--ink-soft)}
 </style>
 </head>
 <body>
 <canvas id="fryCanvas" aria-hidden="true"></canvas>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+<dialog class="fries-modal" id="friesModal" aria-labelledby="friesTitle">
+  <span class="label" style="color:var(--chili)">Honorary Mitchelle Karanja</span>
+  <h3 id="friesTitle">Now buy me fries.</h3>
+  <p>You have tossed enough warus for today:</p>
+  <div class="opts">
+    <button class="btn red" type="button" data-fries="Chipo Mwitu">Chips Mwitu</button>
+    <button class="btn" type="button" data-fries="Chipo ya KFC">Chipo za KFC</button>
+  </div>
+  <button class="later" type="button" id="friesLater">Maybe later</button>
+</dialog>
 
 <header class="top">
   <div class="wrap">
@@ -510,6 +530,8 @@ footer b{color:var(--fry);font-family:var(--f-display);font-weight:400;font-size
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const $ = s => document.querySelector(s);
 
+  const PHONE='254748084542';
+
   /* ---------- toast ---------- */
   const toastEl = $('#toast'); let tt;
   function toast(t){ toastEl.textContent = t; toastEl.classList.add('show'); clearTimeout(tt); tt = setTimeout(()=>toastEl.classList.remove('show'), 2200); }
@@ -557,8 +579,19 @@ footer b{color:var(--fry);font-family:var(--f-display);font-weight:400;font-size
     let r=0; ranks.forEach((li,i)=>{ if(count>=+li.dataset.min) r=i; });
     ranks.forEach((li,i)=>li.classList.toggle('on',i===r));
     if(announce && lastRank!==-1 && r>lastRank && rankMsgs[r]) toast(rankMsgs[r]);
+    if(announce && lastRank!==-1 && r>lastRank && r===ranks.length-1) setTimeout(openFries, reduce?0:900);
     lastRank=r;
   }
+  /* ---------- honorary fries modal ---------- */
+  const friesModal=$('#friesModal');
+  function openFries(){ if(!friesModal.open) friesModal.showModal(); }
+  friesModal.querySelectorAll('[data-fries]').forEach(b=>b.addEventListener('click',()=>{
+    const text=`Hi Mitchelle Karanja! I have been tossing warus on your site, so I'm buying you ${b.dataset.fries}. Do you want your chipo with sauce ama waeke chumvi pekee?`;
+    window.open(`https://wa.me/${PHONE}?text=${encodeURIComponent(text)}`,'_blank','noopener');
+    friesModal.close();
+  }));
+  $('#friesLater').addEventListener('click',()=>friesModal.close());
+  friesModal.addEventListener('click',e=>{ if(e.target===friesModal) friesModal.close(); });
   render(false);
   function addFries(n){ count+=n; try{localStorage.setItem('mk-fries',count);}catch(e){} render(true); }
   function addO(){
@@ -628,7 +661,6 @@ footer b{color:var(--fry);font-family:var(--f-display);font-weight:400;font-size
   }));
 
   /* ---------- gig message builder ---------- */
-  const PHONE='254748084542';
   const boxes=[...document.querySelectorAll('.pick input')], brand=$('#brandName'), when=$('#when'), msg=$('#msg'), wa=$('#waLink');
   function listJoin(a){ return a.length<2 ? (a[0]||'a collab') : a.slice(0,-1).join(', ')+' and '+a[a.length-1]; }
   function build(){
